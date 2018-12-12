@@ -230,14 +230,14 @@ def generate_vasp_params(structure, settings, type=None, pressure=0.0):
         inputs._options.queue_name = settings.dict.machine['queue_name']
     if 'import_sys_environment' in settings.get_dict()['machine']:
         inputs._options.import_sys_environment = settings.dict.machine['import_sys_environment']
-    # inputs._options._parser_name = 'vasp.pymatgen'
+    # inputs._options._default_parser = 'vasp.pymatgen'
     # Use for all the set functions in calculation.
     # inputs._options = dict(inputs._options)
     # inputs._options['_parser_name'] = 'vasp.pymatgen'
 
     # INCAR (parameters)
     incar = dict(settings.dict.parameters)
-
+    settings_dict = {'parser_settings': {}}
     if type == 'optimize':
         incar.update({
             'PREC': 'Accurate',
@@ -290,6 +290,7 @@ def generate_vasp_params(structure, settings, type=None, pressure=0.0):
             'LCHARG': '.FALSE.',
             'ADDGRID': '.TRUE.',
             'LREAL': '.FALSE.'})
+        settings_dict['parser_settings'].update({'add_born_charges': True})
 
     if not 'EDIFF' in incar:
              incar.update({'EDIFF': 1.0E-8})
@@ -332,6 +333,16 @@ def generate_vasp_params(structure, settings, type=None, pressure=0.0):
         raise InputValidationError('no kpoint definition in input. Define either kpoints_density or kpoints_mesh')
 
     inputs.kpoints = kpoints
+
+    # parser options
+    settings_dict['parser_settings'].update({'add_forces': True,
+                                             'add_energies': True,
+                                             'add_structure': True})
+
+    try:
+        inputs.settings = ParameterData(dict=settings_dict)
+    except:
+        pass
 
     return VaspCalculation.process(), inputs
 

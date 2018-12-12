@@ -165,7 +165,11 @@ def create_forces_set(**kwargs):
 
     forces = []
     for i in range(data_sets.get_number_of_displacements()):
-        forces.append(kwargs.pop('forces_{}'.format(i)).get_array('forces')[-1])
+        try:
+            forces.append(kwargs['forces_{}'.format(i)].get_array('forces')[-1])
+        except:
+            # new vasp plugin
+            forces.append(kwargs['forces_{}'.format(i)].get_array('final'))
 
     force_sets.set_forces(forces)
 
@@ -426,8 +430,8 @@ class PhononPhonopy(WorkChain):
         # Load data from nodes
         if __testing__:
             from aiida.orm import load_node
-            nodes = [96661, 96664]  # VASP
-            labels = ['structure_1', 'structure_0']
+            nodes = [952]  # VASP
+            labels = ['structure_0']
             for pk, label in zip(nodes, labels):
                 future = load_node(pk)
                 self.ctx._content[label] = future
@@ -467,11 +471,18 @@ class PhononPhonopy(WorkChain):
 
         wf_inputs = {}
         for i in range(self.ctx.number_of_displacements):
-            # This has to be changed to make uniform plugin interface
+            # This has to be changed to make uniform plugin interface (or selection function)
             try:
-                wf_inputs['forces_{}'.format(i)] = self.ctx.get('structure_{}'.format(i)).out.output_trajectory
+                # new VASP plugin
+                wf_inputs['forces_{}'.format(i)] = self.ctx.get('structure_{}'.format(i)).out.output_forces
             except:
-                wf_inputs['forces_{}'.format(i)] = self.ctx.get('structure_{}'.format(i)).out.output_array
+                try:
+                    # QE & LAMMPS
+                    wf_inputs['forces_{}'.format(i)] = self.ctx.get('structure_{}'.format(i)).out.output_array
+                except:
+                    # old VASP parser pymatgen
+                    wf_inputs['forces_{}'.format(i)] = self.ctx.get('structure_{}'.format(i)).out.output_trajectory
+
         wf_inputs['data_sets'] = self.ctx.data_sets
 
         self.ctx.force_sets = create_forces_set(**wf_inputs)['force_sets']
