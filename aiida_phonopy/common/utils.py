@@ -346,6 +346,10 @@ def get_phonopy_instance(structure, phonon_settings_dict, params):
 
     unit_cell = phonopy_atoms_from_structure(structure)
 
+    # Convert to plain python dictionary
+    if isinstance(phonon_settings_dict, Dict):
+        phonon_settings_dict = phonon_settings_dict.get_dict()
+
     # Set the magnetic moments
     has_magmom = 'magmom' in phonon_settings_dict
     primitive_matrix = 'auto'
