@@ -35,6 +35,11 @@ def generate_phonopy_cells(phonon_settings,
 
     _update_structure_info(ph_settings, ph)
     structures_dict = _generate_phonon_structures(ph)
+
+    # record the magnetic moments
+    if ph.supercell.magnetic_moments is not None:
+        ph_settings['_supercell_magmom'] = ph.supercell.magnetic_moments
+
     return_vals = {'phonon_setting_info': Dict(dict=ph_settings)}
     return_vals.update(structures_dict)
 
@@ -338,10 +343,21 @@ def get_bands(qpoints, frequencies, labels, path_connections, label=None):
 
 def get_phonopy_instance(structure, phonon_settings_dict, params):
     from phonopy import Phonopy
+
+    unit_cell = phonopy_atoms_from_structure(structure)
+
+    # Set the magnetic moments
+    has_magmom = 'magmom' in phonon_settings_dict
+    primitive_matrix = 'auto'
+    if has_magmom:
+        unit_cell.set_magnetic_moments(phonon_settings_dict['magmom'])
+
+        primitive_matrix = phonon_settings_dict.get('primitive_matrix', None)
+        
     phonon = Phonopy(
-        phonopy_atoms_from_structure(structure),
+        unit_cell,
         supercell_matrix=phonon_settings_dict['supercell_matrix'],
-        primitive_matrix='auto',
+        primitive_matrix=primitive_matrix,
         symprec=phonon_settings_dict['symmetry_tolerance'])
     if 'nac_params' in params:
         from phonopy.interface.calculator import get_default_physical_units
@@ -508,9 +524,11 @@ def _update_structure_info(ph_settings, ph):
     """
     ph_settings['displacement_dataset'] = ph.dataset
     ph_settings['primitive_matrix'] = ph.primitive_matrix
-    ph_settings['symmetry'] = {
-        'number': ph.symmetry.dataset['number'],
-        'international': ph.symmetry.dataset['international']}
+    # For some reason, when there are magnetic moments the symmetry is None
+    if 'magmom' not in ph_settings:
+        ph_settings['symmetry'] = {
+            'number': ph.symmetry.dataset['number'],
+            'international': ph.symmetry.dataset['international']}
 
     if 'phonon_supercell_matrix' in ph.__dir__():
         if ph.phonon_supercell_matrix is not None:
