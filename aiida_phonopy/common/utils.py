@@ -352,11 +352,11 @@ def get_phonopy_instance(structure, phonon_settings_dict, params):
 
     # Set the magnetic moments
     has_magmom = 'magmom' in phonon_settings_dict
-    primitive_matrix = 'auto'
     if has_magmom:
         unit_cell.set_magnetic_moments(phonon_settings_dict['magmom'])
-
         primitive_matrix = phonon_settings_dict.get('primitive_matrix', None)
+    else:
+        primitive_matrix = phonon_settings_dict.get('primitive_matrix', 'auto')
         
     phonon = Phonopy(
         unit_cell,
