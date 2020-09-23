@@ -295,8 +295,11 @@ def get_bands_data(ph):
     frequencies = ph.band_structure.frequencies
     qpoints = ph.band_structure.qpoints
     path_connections = ph.band_structure.path_connections
-    label = "%s (%d)" % (ph.symmetry.dataset['international'],
-                         ph.symmetry.dataset['number'])
+    if ph.symmetry.dataset is not None:
+        label = "%s (%d)" % (ph.symmetry.dataset['international'],
+                            ph.symmetry.dataset['number'])
+    else:
+        label = ""
 
     return get_bands(qpoints, frequencies, labels, path_connections,
                      label=label)
